@@ -55,3 +55,6 @@ def match_resume(req: ResumeRequest):
     "top_matches": ranked_resumes,
     "feedback": feedback
 }
+@app.get("/")
+def home():
+    return {"message": "Resume Matching API is running 🚀"}

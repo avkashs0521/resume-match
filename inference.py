@@ -1,59 +1,82 @@
+import os
 from app.env.environment import ResumeEnv
 from app.env.models import Action
-from app.matching.matcher import match_easy, match_medium, match_hard
-from app.analysis.feedback import generate_feedback
+from app.matching.matcher import match_medium
+# 🔥 REQUIRED ENV VARIABLES
+import os
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+
+# 🔥 suppress transformers logs
+import logging
+logging.getLogger("transformers").setLevel(logging.ERROR)
+logging.getLogger("sentence_transformers").setLevel(logging.ERROR)
+import warnings
+warnings.filterwarnings("ignore")
+API_BASE_URL = os.getenv("API_BASE_URL", "local")
+MODEL_NAME = os.getenv("MODEL_NAME", "rule-based")
+HF_TOKEN = os.getenv("HF_TOKEN", "none")
+
+TASK_NAME = "medium"
+BENCHMARK = "resume_env"
+
+
+def log_start():
+    print(f"[START] task={TASK_NAME} env={BENCHMARK} model={MODEL_NAME}", flush=True)
+
+
+def log_step(step, action, reward, done):
+    print(
+        f"[STEP] step={step} action={action} reward={reward:.2f} done={str(done).lower()} error=null",
+        flush=True
+    )
+
+
+def log_end(success, steps, score, rewards):
+    rewards_str = ",".join([f"{r:.2f}" for r in rewards])
+    print(
+        f"[END] success={str(success).lower()} steps={steps} score={score:.2f} rewards={rewards_str}",
+        flush=True
+    )
 
 
 def run():
-    print("[START]")
+    env = ResumeEnv(task_type=TASK_NAME)
 
-    task_type = "medium"
+    rewards = []
+    steps_taken = 0
 
-    env = ResumeEnv(task_type=task_type)
-    obs = env.reset()
+    log_start()
 
-    resumes = [r.model_dump() for r in obs.resumes]
-    jobs = [j.model_dump() for j in obs.jobs]
+    try:
+        obs = env.reset()
 
-    if task_type == "easy":
-        action = Action(matches=match_easy(resumes, jobs))
+        resumes = [r.model_dump() for r in obs.resumes]
+        jobs = [j.model_dump() for j in obs.jobs]
 
-    elif task_type == "medium":
-        action = Action(ranked_list=match_medium(resumes, jobs))
+        # ✅ use real matching logic
+        ranked = match_medium(resumes, jobs)
 
-    elif task_type == "hard":
-        action = Action(matches=match_hard(resumes, jobs))
+        action = Action(ranked_list=ranked)
 
-    obs, reward, done, _ = env.step(action)
+        obs, reward, done, _ = env.step(action)
 
-    print("[STEP]")
-    print("Task:", task_type)
-    print("Reward:", reward.score)
+        reward_val = reward.score if hasattr(reward, "score") else 0.0
 
-    if task_type == "medium":
-        print("Predicted ranking:", action.ranked_list)
+        rewards.append(reward_val)
+        steps_taken = 1
 
-        job_id = list(env.gt.keys())[0]
-        print("Ground truth:", env.gt[job_id])
+        log_step(1, str(ranked), reward_val, done)
 
-        # 🔥 FEEDBACK BLOCK (NOW CORRECTLY INSIDE)
-        job = jobs[0]
+        score = max(0.0, min(1.0, reward_val))
+        success = score >= 0.1
 
-        print("\n📊 Resume Feedback:\n")
+    except Exception as e:
+        log_step(1, "error", 0.0, True)
+        score = 0.0
+        success = False
 
-        for r_id in action.ranked_list:
-            resume = next(r for r in resumes if r["id"] == r_id)
-
-            fb = generate_feedback(resume, job)
-
-            print(f"Resume {r_id}:")
-            print("  Score:", fb["score"])
-            print("  Matched:", fb["matched_skills"])
-            print("  Missing:", fb["missing_skills"])
-            print("  Suggestion:", fb["suggestion"])
-            print()
-
-    print("[END]")
+    finally:
+        log_end(success, steps_taken, score, rewards)
 
 
 if __name__ == "__main__":
