@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 from app.env.environment import ResumeEnv
 from app.env.models import Action
-from app.matching.matcher import match_easy, match_medium, match_hard, match_random
+from app.matching.matcher import match_easy, match_medium, match_hard, match_random, get_top_k
 from pydantic import BaseModel
 
 app = FastAPI()
@@ -26,12 +26,6 @@ body {
     min-height: 100vh;
     margin: 0;
     padding: 20px;
-}
-
-@keyframes gradientBG {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
 }
 
 .glass-container {
@@ -70,7 +64,7 @@ h1 { font-size: 1.8rem; margin: 0; background: linear-gradient(90deg, #00f2fe, #
 
 .terminal {
     background: rgba(0, 0, 0, 0.4);
-    border-radius: 15px; padding: 15px; font-family: 'JetBrains Mono', monospace; color: #00ffcc; height: 250px; overflow-y: auto; border: 1px solid rgba(0, 255, 204, 0.1);
+    border-radius: 15px; padding: 15px; font-family: 'JetBrains Mono', monospace; color: #00ffcc; height: 350px; overflow-y: auto; border: 1px solid rgba(0, 255, 204, 0.1);
 }
 
 .charts-row { display: flex; flex-direction: column; gap: 12px; }
@@ -83,6 +77,13 @@ h1 { font-size: 1.8rem; margin: 0; background: linear-gradient(90deg, #00f2fe, #
 .modal-content { background: #0e0e1a; border: 1px solid #4facfe; border-radius: 24px; padding: 25px; width: 85%; max-height: 85vh; overflow-y: auto; }
 
 .badge { background: rgba(79, 172, 254, 0.15); color: #4facfe; border: 1px solid rgba(79, 172, 254, 0.3); padding: 5px 10px; border-radius: 8px; font-size: 0.75rem; margin-right: 6px; display: inline-block; margin-bottom: 6px; }
+
+.trust-meter {
+    height: 10px; background: rgba(255,255,255,0.05); border-radius: 5px; overflow: hidden; margin-top: 10px;
+}
+.trust-fill {
+    height: 100%; background: linear-gradient(90deg, #fe4a90, #00ffcc); width: 100%; transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
 """
 
 HTML_CONTENT = """
@@ -90,7 +91,7 @@ HTML_CONTENT = """
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>OpenEnv Arena v3.2 | Radar Tracking</title>
+    <title>OpenEnv Arena v4.0 | Multi-Step HR</title>
     <style>REPLACE_CSS</style>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -98,8 +99,8 @@ HTML_CONTENT = """
 
 <div class="glass-container">
     <div style="display:flex; justify-content:space-between; align-items:center;">
-        <h1>🌌 OpenEnv Arena v3.2</h1>
-        <div style="background:rgba(255,255,255,0.05); padding:6px 12px; border-radius:10px; font-size:0.8rem;">Status: <b>Deterministic</b></div>
+        <h1>🌌 OpenEnv Arena v4.0</h1>
+        <div style="background:rgba(255,255,255,0.05); padding:6px 12px; border-radius:10px; font-size:0.8rem;">Architecture: <b>Stateful Sequential</b></div>
     </div>
     
     <div class="main-layout">
@@ -118,15 +119,16 @@ HTML_CONTENT = """
             </div>
 
             <div class="leaderboard-card">
-                <h3 style="margin-top:0; color:#4facfe;">📊 Stats Leaderboard</h3>
-                <div class="leaderboard-entry"><span>Optimal Agent</span> <b id="lb-optimal" style="color:#00ffcc;">--</b></div>
-                <div class="leaderboard-entry"><span>Random Baseline</span> <b id="lb-random" style="color:#fe4a90;">--</b></div>
+                <h3 style="margin-top:0; color:#4facfe;">📊 Simulation Stats</h3>
+                <div class="leaderboard-entry"><span>Trust Multiplier</span> <b id="ui-trust" style="color:#00ffcc;">1.00</b></div>
+                <div class="trust-meter"><div id="trust-fill" class="trust-fill" style="width: 100%;"></div></div>
+                <div class="leaderboard-entry" style="margin-top:15px;"><span>Shortlisted</span> <b id="ui-shortlist" style="color:#4facfe;">0</b></div>
             </div>
         </div>
 
         <div class="col-mid">
             <div class="terminal" id="terminal">
-                <div style="color:#888;">>> Arena system standby...</div>
+                <div style="color:#888;">>> Deep HR Reasoning Engine Ready...</div>
             </div>
             <div class="charts-row">
                 <div class="chart-container"><canvas id="rewardChart"></canvas></div>
@@ -136,18 +138,18 @@ HTML_CONTENT = """
 
         <div class="col-right">
             <div class="task-card" style="height:100%; border-color: rgba(79, 172, 254, 0.2);">
-                <h3 style="margin-top:0;">📡 Agent Analytics</h3>
+                <h3 style="margin-top:0;">📡 Decision Analytics</h3>
                 <div style="margin-bottom:20px;">
-                    <div style="color:#a0a0b0; font-size:0.85rem;">REWARD GRADIENT</div>
+                    <div style="color:#a0a0b0; font-size:0.85rem;">REWARD SCORE</div>
                     <div id="xai-score" style="font-size:2.8rem; font-weight:bold; color:#00ffcc;">0.00</div>
                 </div>
                 <div>
-                    <div style="color:#a0a0b0; font-size:0.85rem;">SKILL OVERLAP</div>
+                    <div style="color:#a0a0b0; font-size:0.85rem;">SKILL ALIGNMENT</div>
                     <div id="xai-matched" style="margin-top:8px;">--</div>
                 </div>
                 <div style="margin-top:20px;">
                     <div style="color:#a0a0b0; font-size:0.85rem;">ADAPTIVE FEEDBACK</div>
-                    <div id="xai-sugg" style="color:#fe4a90; margin-top:8px; font-weight:600; line-height:1.4;">Waiting for agent action...</div>
+                    <div id="xai-sugg" style="color:#fe4a90; margin-top:8px; font-weight:600; line-height:1.4;">Simulation Standby...</div>
                 </div>
             </div>
         </div>
@@ -157,7 +159,7 @@ HTML_CONTENT = """
 <div id="inspector-modal" class="modal">
     <div class="modal-content">
         <span onclick="closeModal()" style="float:right; cursor:pointer; font-size:2rem;">&times;</span>
-        <h2 style="color:#4facfe;">🔍 Vector Inspector</h2>
+        <h2 style="color:#4facfe;">🔍 Multi-Step Inspector</h2>
         <div id="modal-body"></div>
     </div>
 </div>
@@ -169,13 +171,13 @@ HTML_CONTENT = """
     function initCharts() {
         rewardChart = new Chart(document.getElementById('rewardChart'), {
             type: 'line',
-            data: { labels: [], datasets: [{ label: 'Reward history', data: [], borderColor: '#fe4a90', tension: 0.3, fill: true, backgroundColor: 'rgba(254, 74, 144, 0.1)' }] },
+            data: { labels: [], datasets: [{ label: 'Reward trajectory', data: [], borderColor: '#fe4a90', tension: 0.3, fill: true, backgroundColor: 'rgba(254, 74, 144, 0.1)' }] },
             options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: 0, max: 1 } } }
         });
         skillRadar = new Chart(document.getElementById('skillRadar'), {
             type: 'radar',
-            data: { labels: ['Matched Skills', 'Missing Skills', 'Complexity', 'Diversity', 'Alignment'], 
-                   datasets: [{ label: 'NLP Delta', data: [0, 0, 0, 0, 0], backgroundColor: 'rgba(0, 255, 204, 0.2)', borderColor: '#00ffcc', pointBackgroundColor: '#00ffcc' }] },
+            data: { labels: ['Matched', 'Missing', 'Complexity', 'Diversity', 'Alignment'], 
+                   datasets: [{ label: 'HR Compliance', data: [0, 0, 0, 0, 0], backgroundColor: 'rgba(0, 255, 204, 0.2)', borderColor: '#00ffcc', pointBackgroundColor: '#00ffcc' }] },
             options: { responsive: true, maintainAspectRatio: false, scales: { r: { suggestedMin: 0, suggestedMax: 10 } } }
         });
     }
@@ -183,9 +185,9 @@ HTML_CONTENT = """
     function log(msg, type='info', data=null) {
         const div = document.createElement('div');
         div.style.padding = '4px 0';
-        div.style.color = type === 'reasoning' ? '#4facfe' : (type === 'success' ? '#00ffcc' : '#fff');
+        div.style.color = type === 'reasoning' ? '#4facfe' : (type === 'success' ? '#00ffcc' : (type === 'step' ? '#fe4a90' : '#fff'));
         div.innerHTML = msg;
-        if (data) { div.onclick = () => openInspector(data); div.style.cursor = 'pointer'; div.title = "Click to inspect vectors"; }
+        if (data) { div.onclick = () => openInspector(data); div.style.cursor = 'pointer'; div.title = "Click to inspect step details"; }
         term.appendChild(div);
         term.scrollTop = term.scrollHeight;
     }
@@ -198,34 +200,38 @@ HTML_CONTENT = """
 
     async function runTask(taskType, btn) {
         btn.disabled = true;
+        term.innerHTML = ''; // Clear terminal
+        log(`>> ARCHITECTURE: OpenEnv Stateful Simulation Initiated...`, 'step');
         
-        log(`>> -------------------------`, 'info');
-        log(`>> INITIALIZING ${taskType.toUpperCase()} ARENA TRAJECTORY...`, 'info');
-        await new Promise(r => setTimeout(r, 600));
-        log(">> [REASONING] Decoding job requirements into TF-IDF sparse matrix...", 'reasoning');
-        await new Promise(r => setTimeout(r, 800));
-        log(">> [REASONING] Generating transformer-based contextual embeddings...", 'reasoning');
-        await new Promise(r => setTimeout(r, 800));
-
         try {
             const res = await fetch(`/api/run/${taskType}`);
             const data = await res.json();
             
             for (let entry of data.logs) {
-                await new Promise(r => setTimeout(r, 400));
+                await new Promise(r => setTimeout(r, 600));
                 log(entry.msg, entry.status, entry.data);
                 
+                // Update Trust UI
+                if (entry.trust !== undefined) {
+                    document.getElementById('ui-trust').innerText = entry.trust.toFixed(2);
+                    document.getElementById('trust-fill').style.width = `${(entry.trust - 0.5) / 0.5 * 100}%`;
+                }
+                
+                // Update Shortlist UI
+                if (entry.shortlist_count !== undefined) {
+                    document.getElementById('ui-shortlist').innerText = entry.shortlist_count;
+                }
+
                 if (entry.reward !== undefined) {
-                    if (rewardChart.data.labels.length > 30) {
+                    if (rewardChart.data.labels.length > 50) {
                         rewardChart.data.labels.shift();
                         rewardChart.data.datasets[0].data.shift();
                     }
-                    rewardChart.data.labels.push(`S${rewardChart.data.labels.length + 1}`);
+                    rewardChart.data.labels.push(`L${rewardChart.data.labels.length + 1}`);
                     rewardChart.data.datasets[0].data.push(entry.reward);
                     rewardChart.update();
                 }
 
-                // 🔥 UPDATE RADAR PER-STEP
                 if (entry.xai) {
                     document.getElementById('xai-matched').innerHTML = entry.xai.matched_skills.map(s => `<span class="badge">${s}</span>`).join('') || '--';
                     document.getElementById('xai-sugg').innerText = entry.xai.suggestion || 'Analyzing...';
@@ -233,17 +239,14 @@ HTML_CONTENT = """
                     skillRadar.data.datasets[0].data = [
                         entry.xai.matched_skills.length, 
                         entry.xai.missing_skills.length, 
-                        5, 7, entry.reward * 10
+                        6, 4, entry.reward * 10
                     ];
                     skillRadar.update();
+                    document.getElementById('xai-score').innerText = entry.reward.toFixed(2);
                 }
             }
-
-            document.getElementById('xai-score').innerText = data.score.toFixed(2);
-            document.getElementById('lb-optimal').innerText = data.score.toFixed(2);
-            document.getElementById('lb-random').innerText = data.random_score.toFixed(2);
             
-        } catch(e) { log(">> ERROR: Inference error.", 'reasoning'); }
+        } catch(e) { log(">> CRITICAL ERROR: Environment simulation interrupted.", 'step'); }
         btn.disabled = false;
     }
     window.onload = initCharts;
@@ -262,63 +265,72 @@ def run_task(task_type: str):
     obs = env.reset()
     logs = []
     
-    r_map = {r.id: r.model_dump() for r in obs.resumes}
-    j_map = {j.id: j.model_dump() for j in obs.jobs}
-    resumes_dict = [r.model_dump() for r in obs.resumes]
-    jobs_dict = [j.model_dump() for j in obs.jobs]
+    all_resumes_dict = [r.model_dump() for r in obs.resumes]
+    all_jobs_dict = [j.model_dump() for j in obs.jobs]
     
-    random_matches = match_random(resumes_dict, jobs_dict, task_type)
-    env_random = ResumeEnv(task_type=task_type)
-    env_random.reset()
-    act = Action(matches=random_matches if task_type != "medium" else {}, ranked_list=random_matches if task_type == "medium" else [])
-    _, r_reward, _, _ = env_random.step(act)
+    # ---------------------------------------------------------
+    # 🚀 STEP 1: ANALYZE_JOB
+    # ---------------------------------------------------------
+    obs, reward, done, _ = env.step(Action(action_type="analyze_job"))
+    logs.append({
+        "msg": f">> STEP 1: [Analyze] Extracting keyword dependencies for {task_type.upper()} task.",
+        "status": "step",
+        "reward": reward.score,
+        "trust": reward.trust_score,
+        "data": {"jobs": all_jobs_dict}
+    })
 
+    # ---------------------------------------------------------
+    # 🚀 STEP 2: SHORTLIST
+    # ---------------------------------------------------------
+    primary_job = all_jobs_dict[0]
+    shortlist_ids = get_top_k(primary_job, all_resumes_dict, k=5)
+    obs, reward, done, _ = env.step(Action(action_type="shortlist", resumes=shortlist_ids))
+    logs.append({
+        "msg": f">> STEP 2: [Shortlist] Identifed top-5 candidates via semantic similarity.",
+        "status": "step",
+        "reward": reward.score,
+        "trust": reward.trust_score,
+        "shortlist_count": len(obs.shortlisted_resumes),
+        "data": {"shortlisted_ids": shortlist_ids}
+    })
+
+    # ---------------------------------------------------------
+    # 🚀 STEP 3: RANK
+    # ---------------------------------------------------------
+    obs, reward, done, _ = env.step(Action(action_type="rank"))
+    logs.append({
+        "msg": f">> STEP 3: [Rank] Calculating optimal decision path across all available vectors.",
+        "status": "step",
+        "reward": reward.score,
+        "trust": reward.trust_score,
+        "data": {"current_matches": obs.current_matches}
+    })
+
+    # ---------------------------------------------------------
+    # 🚀 STEP 4: FINALIZE
+    # ---------------------------------------------------------
     if task_type == "easy":
-        matches = match_easy(resumes_dict, jobs_dict)
-        obs, reward, done, info = env.step(Action(matches=matches))
-        jid = list(matches.keys())[0]
-        logs.append({
-            "msg": f">> ACTION: Found Optimal Candidate for {jid}", 
-            "status": "success", 
-            "reward": reward.score, 
-            "xai": reward.model_dump(),
-            "data": {"job": j_map[jid], "resume": r_map[matches[jid]]}
-        })
-        score = reward.score
-        
+        matches = match_easy(all_resumes_dict, all_jobs_dict)
+        final_act = Action(action_type="finalize", matches=matches)
     elif task_type == "medium":
-        ranked = match_medium(resumes_dict, jobs_dict)
-        obs, reward, done, info = env.step(Action(ranked_list=ranked))
-        logs.append({
-            "msg": f">> ACTION: Generated Semantic Top-3 Candidates", 
-            "status": "success", 
-            "reward": reward.score, 
-            "xai": reward.model_dump(),
-            "data": {"job": jobs_dict[0], "ranked": [r_map[rid] for rid in ranked]}
-        })
-        score = reward.score
-        
+        ranked = match_medium(all_resumes_dict, all_jobs_dict)
+        final_act = Action(action_type="finalize", ranked_list=ranked)
     else: # hard
-        opt_matches = match_hard(resumes_dict, jobs_dict)
-        score = 0
-        matches_so_far = {}
-        for idx, (j_id, r_id) in enumerate(opt_matches.items()):
-            matches_so_far[j_id] = r_id
-            obs, reward, done, info = env.step(Action(matches=matches_so_far))
-            logs.append({
-                "msg": f">> STEP {idx+1}: Optimal Batch Assignment applied.", 
-                "status": "info", 
-                "reward": reward.score, 
-                "xai": reward.model_dump(),
-                "data": {"job": j_map[j_id], "resume": r_map[r_id]}
-            })
-            score = reward.score
-        
-    return {"score": score, "random_score": r_reward.score, "logs": logs, "reward_data": reward.model_dump()}
+        matches = match_hard(all_resumes_dict, all_jobs_dict)
+        final_act = Action(action_type="finalize", matches=matches)
 
-@app.post("/match")
-def match_health(req: MatchRequest):
-    return {"status": "ok"}
+    obs, reward, done, _ = env.step(final_act)
+    logs.append({
+        "msg": f">> STEP 4: [Finalize] Optimal Batch Assignment applied successfully.",
+        "status": "success",
+        "reward": reward.score,
+        "trust": reward.trust_score,
+        "xai": reward.model_dump(),
+        "data": {"final_matches": obs.current_matches}
+    })
+        
+    return {"logs": logs}
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 7860))

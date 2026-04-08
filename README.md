@@ -1,52 +1,65 @@
 # 🏢 OpenEnv-Compliant Resume-Job Matching Environment
 
-A strictly OpenEnv-compliant real-world simulation environment for Job and Resume Matching.
+A strictly OpenEnv-compliant real-world simulation environment for Job and Resume Matching, featuring CorpSeQL-inspired **Trust-Based Scaling**.
+
+## Architecture Overview 🛠️
+
+```mermaid
+graph TD
+    A[AI Agent] -->|Action| B[ResumeEnv]
+    B -->|Reward Shaping| C{State Machine}
+    C -->|Invalid Order| D[Penalty & Trust Drop]
+    C -->|Sequential Step| E[Bonus & Trust Boost]
+    E --> F[Hybrid Matcher Score]
+    F -->|Raw Cumulative| G[Trust Scaling 0.5-1.0]
+    G -->|Final Clamp 0,1| H[Delta Reward]
+    H -->|Observation| A
+```
 
 ## Environment Description 🧠
-The `resume-matching-env` simulates the authentic task of an HR AI assistant matching candidate resumes to job descriptions. 
-Unlike standard vector-search, this environment utilizes a **Hybrid NLP weighting strategy** ($90/10$ split between TF-IDF and SentenceTransformers) to deterministically assess and reward the AI agent's actions natively without bias.
+The `resume-matching-env` simulates the high-stakes reasoning chain of an HR AI assistant. Unlike standard one-shot vector search, this environment enforces a **Stateful Reasoning workflow** to evaluate if agents can maintain consistency across multiple logical turns.
+
+## 🔁 Multi-Step Reasoning Workflow
+Agents must navigate the following transitions. Skipping steps or taking erratic actions triggers **Behavioral Penalties**:
+
+1.  **Analyze (`analyze_job`)**: Review the job requirements and constraints.
+2.  **Shortlist (`shortlist`)**: Filter the candidate pool into a semantic subset.
+3.  **Rank (`rank`)**: Order the shortlist by deep contextual relevance.
+4.  **Finalize (`finalize`)**: Commit final matches or rankings.
+
+## 🎯 Advanced Reward Engineering (Trust Score)
+The system uses a **CorpSeQL-style Trust-Based Reward Model**:
+- **Trust Multiplier**: Calculated between `0.5` and `1.0`.
+- **Scaling Phase**: `Final Reward = Cumulative Raw * Trust Score`.
+- **Behavioral Update**: Trust increases on consecutive logical steps and decreases on invalid transitions or skipping.
+- **Normalization**: All final rewards are strictly clamped to the `[0.0, 1.0]` range for OpenEnv compliance.
 
 ## Action & Observation Spaces
 
 ### Observation Space
 The observation space is a Pydantic model (`Observation`) containing:
-- `resumes`: A list of resumes (id, skills, experience, text).
-- `jobs`: A list of job requirements (id, skills_required, description).
-- `current_matches`: The current state of assignments.
-- `step_count`: The number of steps taken in the current episode.
+- `resumes`: Full candidate vector database.
+- `jobs`: Target job definitions.
+- `shortlisted_resumes`: State of the current shortlist.
+- `trust_score`: Real-time decision quality multiplier.
+- `current_step_name`: The logical step expected by the environment.
 
 ### Action Space
 The action space is a Pydantic model (`Action`) containing:
-- `matches`: A dictionary of `{job_id: resume_id}` for direct assignment tasks.
-- `ranked_list`: A list of `resume_id`s corresponding to the top-ranked candidates for a specific job.
+- `action_type`: `analyze_job`, `shortlist`, `rank`, or `finalize`.
+- `matches`: `{job_id: resume_id}` dictionary for batch assignments.
+- `ranked_list`: Ordered list of `resume_id`s for ranking tasks.
 
-## Tasks and Difficulty
-The environment provides 3 tasks:
-- **Easy (`easy`)**: The agent is presented with 1 job and must identify the single best matching resume.
-- **Medium (`medium`)**: The agent is presented with 1 job and must return a ranked list of the top 3 resumes.
-- **Hard (`hard`)**: The agent is presented with a batch of 5 jobs and must optimally assign each job to a single resume. The agent can submit assignments iteratively over multiple steps.
+## 📊 Benchmark Metrics
+This environment delivers three difficulty levels to stress-test LLM reasoning:
+- **Easy**: 1 Job vs N Resumes (Basic selection).
+- **Medium**: 1 Job → Top 3 Ranked List (Semantic ordering).
+- **Hard**: 5 Jobs Batch Allocation (Optimization and conflict resolution).
 
-## Setup Instructions
-```bash
-pip install -r requirements.txt
-```
+## Setup & Execution
+- **Run Baseline**: `python baseline_agent.py` (Validation via deterministic matching)
+- **Run AI Inference**: `python inference.py` (Evaluates LLM with silent fallback)
+- **Open Dashboard**: `python app.py` (Visualizes Trust, Rewards, and Step-wise state)
 
-## Running the External Agent Interface (Inference)
-You can evaluate a standard LLM agent's performance against the environment using the inference pipeline. This simulates the Phase 2 agent-runner that will interact with the environment.
-```bash
-export OPENAI_API_KEY="sk-..."
-python inference.py
-```
-
-## Evaluation (Phase 2) Compatibility 🤖
-This setup strictly complies with the Phase 2 OpenEnv requirements:
-- **No internal RL agent required:** The core deliverable is the Environment + Inference bridge.
-- **`inference.py` script:** Facilitates interaction between an external LLM agent (like OpenAI) and the `ResumeEnv` environment.
-- **Structured JSON-compliant logs:** Built to output `[START]`, `[STEP]`, and `[END]` syntax tracking the state, rewards, and exact agent XAI feedback, ensuring seamless ingestion by automated benchmarking scrapers.
-
-## Deployment
-This environment is containerized for Hugging Face Spaces.
-```bash
-docker build -t openenv-resume .
-docker run -p 7860:7860 openenv-resume
-```
+---
+**This environment is built for evaluating high-fidelity agents where reasoning consistency is as important as the final match.**

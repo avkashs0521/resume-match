@@ -6,7 +6,7 @@ from scipy.optimize import linear_sum_assignment
 # ✅ EASY → best match only
 def match_easy(resumes, jobs):
     sim = compute_similarity(resumes, jobs)
-    sim += np.random.normal(0, 0.08, sim.shape) # Add temperature variance
+    # sim += np.random.normal(0, 0.02, sim.shape) # Removed randomness for deterministic baseline requirement
 
     matches = {}
     for i, job in enumerate(jobs):
@@ -21,7 +21,7 @@ def match_medium(resumes, jobs):
     job = jobs[0]
 
     sim = compute_similarity(resumes, [job])[0]
-    sim += np.random.normal(0, 0.08, sim.shape) # Add temperature variance
+    # sim += np.random.normal(0, 0.02, sim.shape) # Removed randomness for deterministic baseline requirement
 
     # 🔥 SKILL BOOST
     boosted_scores = []
@@ -45,7 +45,7 @@ def match_medium(resumes, jobs):
 # ✅ HARD → optimal assignment
 def match_hard(resumes, jobs):
     sim = compute_similarity(resumes, jobs)
-    sim += np.random.normal(0, 0.08, sim.shape) # Add temperature variance
+    # sim += np.random.normal(0, 0.02, sim.shape) # Removed randomness for deterministic baseline requirement
 
     cost = -sim
     row_ind, col_ind = linear_sum_assignment(cost)
@@ -55,6 +55,23 @@ def match_hard(resumes, jobs):
         assignments[jobs[j]["id"]] = resumes[r]["id"]
 
     return assignments
+
+
+# ✅ UTILITY → Get top matching resumes for a job
+def get_top_k(job, resumes, k=5):
+    """
+    Ranks all resumes against a job and returns the top K resume IDs.
+    Used for shortlisting steps in multi-step simulations.
+    """
+    if isinstance(job, list):
+        job = job[0]
+        
+    sim = compute_similarity(resumes, [job])[0]
+    
+    # Sort indices by similarity descending
+    top_indices = np.argsort(sim)[::-1]
+    
+    return [resumes[i]["id"] for i in top_indices[:k]]
 
 
 # ✅ RANDOM → baseline (for comparison)
