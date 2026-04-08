@@ -1,0 +1,29 @@
+# Virtual Environment
+venv/
+env/
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Git
+.git/
+.gitignore
+
+# Local Data/Logs
+logs/
+checkpoints/
+.DS_Store
+
+# Large model files (these should be downloaded inside the Dockerfile)
+models/
+.cache/
+
+# Artifacts
+architecture.png
+walkthrough.md
+implementation_plan.md
+task.md

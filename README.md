@@ -1,3 +1,13 @@
+---
+title: OpenEnv Resume Arena
+emoji: 🌌
+colorFrom: indigo
+colorTo: blue
+sdk: docker
+app_port: 7860
+pinned: false
+---
+
 # 🏢 OpenEnv-Compliant Resume-Job Matching Environment
 
 A strictly OpenEnv-compliant real-world simulation environment for Job and Resume Matching, featuring advanced **Trust-Based Scaling**.
@@ -103,6 +113,23 @@ The final summary of the episode.
 - **Success**: Boolean (`True/False`) based on meeting the reward threshold.
 - **Score**: The final trust-scaled, clamped reward (0.0 to 1.0).
 - **Rewards**: The full trajectory of delta rewards, showing exactly where the agent added value.
+
+---
+
+## 🔑 Environment Variables & Secrets
+
+To unlock the full potential of the OpenEnv Arena, you need to configure the following environment variables. In Hugging Face Spaces, these should be added under **Settings > Variables and Secrets**.
+
+| Variable | Required | Description |
+| :--- | :--- | :--- |
+| `HF_TOKEN` | **Yes (for AI)** | Your Hugging Face Access Token. Required for `inference.py` to call the Serverless Inference API. Ensure the token has "Read" (Inference) permissions. |
+| `PORT` | No | The port the web dashboard (`app.py`) listens on. Defaults to `7860` (Hugging Face standard). |
+
+### Setting up `HF_TOKEN`
+1. Go to [Hugging Face Settings](https://huggingface.co/settings/tokens).
+2. Create a new token with **Read** access to the Inference API.
+3. **Local**: `export HF_TOKEN="your_token_here"`
+4. **Docker**: `docker run -e HF_TOKEN="your_token_here" resume-arena`
 
 ---
 
