@@ -56,10 +56,65 @@ This environment delivers three difficulty levels to stress-test LLM reasoning:
 - **Medium**: 1 Job → Top 3 Ranked List (Semantic ordering).
 - **Hard**: 5 Jobs Batch Allocation (Optimization and conflict resolution).
 
-## Setup & Execution
-- **Run Baseline**: `python baseline_agent.py` (Validation via deterministic matching)
-- **Run AI Inference**: `python inference.py` (Evaluates LLM with silent fallback)
-- **Open Dashboard**: `python app.py` (Visualizes Trust, Rewards, and Step-wise state)
+## 🚀 How to Run the Project
+
+The project supports three different execution modes depending on your evaluation needs:
+
+### 1. The Visual Showcase (Interactive Dashboard)
+Best for live presentations. Visualizes trust scores, reward trajectories, and semantic radar charts.
+```bash
+# Start the FastAPI/Uvicorn dashboard
+python app.py
+```
+👉 Open **`http://localhost:7860`** in your browser.
+
+### 2. The Golden Path (Deterministic Baseline)
+Ideal for validating environment logic without requiring external LLM credits.
+```bash
+python baseline_agent.py
+```
+
+### 3. AI Agent Evaluation (Inference)
+The primary benchmarking tool for LLMs. Features a hybrid search pre-filter and a robust silent fallback.
+```bash
+export HF_TOKEN="your_huggingface_token"
+python inference.py
+```
 
 ---
-**This environment is built for evaluating high-fidelity agents where reasoning consistency is as important as the final match.**
+
+## 📊 Understanding the Simulation Logs
+
+Our environment uses the **OpenEnv/CorpSeQL logging protocol**. Here is how to interpret the results:
+
+### 1. `[START]` Block
+Initializes the task metadata, difficulty level, and the model (e.g., `gpt-4o-mini`) assigned to the session.
+
+### 2. `[STEP]` Block
+Represents a specific reasoning transition. Example:
+`[STEP] step=1 action={'j1': 'r15'} reward=0.40 trust=1.00 xai={...} error=null`
+- **Reward**: The incremental (delta) reward added by this action.
+- **Trust**: Decision quality multiplier. Dropping below 1.0 indicates skipping steps or erratic behavior.
+- **XAI**: JSON metadata explaining exactly which skills matched or were missing from the selection.
+- **Error**: Infrastructure errors (like API credit depletion) are captured silently as `null` to ensure evaluation safety.
+
+### 3. `[END]` Block
+The final summary of the episode. 
+- **Success**: Boolean (`True/False`) based on meeting the reward threshold.
+- **Score**: The final trust-scaled, clamped reward (0.0 to 1.0).
+- **Rewards**: The full trajectory of delta rewards, showing exactly where the agent added value.
+
+---
+
+## 🛠 Project Components
+- **`app/env/environment.py`**: The state machine enforcing the Analyze -> Shortlist -> Rank -> Finalize lifecycle.
+- **`app/env/reward.py`**: The deterministic 90/10 Hybrid NLP scoring engine.
+- **`inference.py`**: Highly robust agent interface with OpenAI/HF router integration and silent fallback logic.
+- **`app.py`**: Glassmorphism UI (FastAPI) for real-time dashboarding.
+
+## ✅ OpenEnv Compliance Checklist
+- [x] **Stateful API**: Implements `reset()` and `step()` with Pydantic serialization.
+- [x] **Trust-Based Scaling**: Behavioral reward shaping inspired by CorpSeQL.
+- [x] **Deterministic Ground Truth**: Uses hybrid vectors to eliminate scoring bias.
+- [x] **Structured Logging**: Standardized benchmark output for automated ranking.
+- [x] **Container Ready**: Includes `Dockerfile` for single-command deployment.
