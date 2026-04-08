@@ -52,3 +52,19 @@ def match_hard(resumes, jobs):
         assignments[jobs[j]["id"]] = resumes[r]["id"]
 
     return assignments
+
+
+# ✅ RANDOM → baseline (for comparison)
+def match_random(resumes, jobs, task_type="easy"):
+    import random
+    r_ids = [r["id"] for r in resumes]
+    j_ids = [j["id"] for j in jobs]
+    
+    if task_type == "medium":
+        return random.sample(r_ids, min(3, len(r_ids)))
+    
+    # For easy and hard, assign one resume per job randomly
+    matches = {}
+    for jid in j_ids:
+        matches[jid] = random.choice(r_ids)
+    return matches
