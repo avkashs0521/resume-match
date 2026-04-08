@@ -1,30 +1,9 @@
-INFO:     Started server process [2364]
+INFO:     Started server process [7393]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
 INFO:     Uvicorn running on http://0.0.0.0:7860 (Press CTRL+C to quit)
-INFO:     127.0.0.1:53878 - "GET / HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53878 - "GET /static/logo.png HTTP/1.1" 304 Not Modified
-INFO:     127.0.0.1:53897 - "GET / HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53897 - "GET /static/logo.png HTTP/1.1" 304 Not Modified
-INFO:     127.0.0.1:53965 - "GET / HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53965 - "GET /static/logo.png HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:55711 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55711 - "GET /static/logo.png HTTP/1.1" 304 Not Modified
 Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
-INFO:     127.0.0.1:53965 - "GET /api/run/easy HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53968 - "GET /api/run/easy HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53991 - "GET / HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53991 - "GET /static/logo.png HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53991 - "GET /favicon.ico HTTP/1.1" 404 Not Found
-INFO:     127.0.0.1:53993 - "GET /api/run/easy HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53993 - "GET /api/run/medium HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54009 - "GET /api/run/hard HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54009 - "GET /api/run/hard HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54060 - "GET /api/run/hard HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54068 - "GET /api/run/medium HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54068 - "GET /api/run/easy HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54099 - "GET /api/run/medium HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54105 - "GET /api/run/hard HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54223 - "GET / HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54223 - "GET /static/logo.png HTTP/1.1" 304 Not Modified
-INFO:     127.0.0.1:54223 - "GET /api/run/easy HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54224 - "GET /api/run/medium HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54224 - "GET /api/run/hard HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55711 - "GET /api/run/easy HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55713 - "GET /api/run/medium HTTP/1.1" 200 OK

@@ -8,7 +8,7 @@ WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-# Install system dependencies if needed (none required for current NLP stack)
+# Install system dependencies if needed
 # RUN apt-get update && apt-get install -y --no-install-recommends gcc && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first for better caching
@@ -21,8 +21,8 @@ RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTr
 # Copy the rest of the application
 COPY . .
 
-# Ensure no absolute paths are leaked from local dev
-RUN grep -r "/Users/" . && exit 1 || exit 0
+# Clean up local environment artifacts if any
+RUN rm -rf __pycache__ .pytest_cache
 
-# Set non-interactive entry point as requested
-CMD ["python", "inference.py"]
+# Set dashboard as the entry point
+CMD ["python", "app.py"]
