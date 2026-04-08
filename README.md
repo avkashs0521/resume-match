@@ -1,6 +1,6 @@
 # 🏢 OpenEnv-Compliant Resume-Job Matching Environment
 
-A strictly OpenEnv-compliant real-world simulation environment for Job and Resume Matching, featuring CorpSeQL-inspired **Trust-Based Scaling**.
+A strictly OpenEnv-compliant real-world simulation environment for Job and Resume Matching, featuring advanced **Trust-Based Scaling**.
 
 ## Architecture Overview 🛠️
 
@@ -28,7 +28,7 @@ Agents must navigate the following transitions. Skipping steps or taking erratic
 4.  **Finalize (`finalize`)**: Commit final matches or rankings.
 
 ## 🎯 Advanced Reward Engineering (Trust Score)
-The system uses a **CorpSeQL-style Trust-Based Reward Model**:
+The system uses an **Advanced Trust-Based Reward Model**:
 - **Trust Multiplier**: Calculated between `0.5` and `1.0`.
 - **Scaling Phase**: `Final Reward = Cumulative Raw * Trust Score`.
 - **Behavioral Update**: Trust increases on consecutive logical steps and decreases on invalid transitions or skipping.
@@ -85,7 +85,7 @@ python inference.py
 
 ## 📊 Understanding the Simulation Logs
 
-Our environment uses the **OpenEnv/CorpSeQL logging protocol**. Here is how to interpret the results:
+Our environment uses the **OpenEnv standardized logging protocol**. Here is how to interpret the results:
 
 ### 1. `[START]` Block
 Initializes the task metadata, difficulty level, and the model (e.g., `gpt-4o-mini`) assigned to the session.
@@ -114,7 +114,7 @@ The final summary of the episode.
 
 ## ✅ OpenEnv Compliance Checklist
 - [x] **Stateful API**: Implements `reset()` and `step()` with Pydantic serialization.
-- [x] **Trust-Based Scaling**: Behavioral reward shaping inspired by CorpSeQL.
+- [x] **Trust-Based Scaling**: Behavioral reward shaping based on decision consistency.
 - [x] **Deterministic Ground Truth**: Uses hybrid vectors to eliminate scoring bias.
 - [x] **Structured Logging**: Standardized benchmark output for automated ranking.
 - [x] **Container Ready**: Includes `Dockerfile` for single-command deployment.
