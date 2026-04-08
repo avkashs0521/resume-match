@@ -197,10 +197,10 @@ HTML_CONTENT = """
     function closeModal() { document.getElementById('inspector-modal').style.display = 'none'; }
 
     async function runTask(taskType, btn) {
-        btn.disabled = true; term.innerHTML = '';
-        rewardChart.data.labels = []; rewardChart.data.datasets[0].data = []; rewardChart.update();
+        btn.disabled = true;
         
-        log(">> INITIALIZING ARENA TRAJECTORY...", 'info');
+        log(`>> -------------------------`, 'info');
+        log(`>> INITIALIZING ${taskType.toUpperCase()} ARENA TRAJECTORY...`, 'info');
         await new Promise(r => setTimeout(r, 600));
         log(">> [REASONING] Decoding job requirements into TF-IDF sparse matrix...", 'reasoning');
         await new Promise(r => setTimeout(r, 800));
@@ -216,6 +216,10 @@ HTML_CONTENT = """
                 log(entry.msg, entry.status, entry.data);
                 
                 if (entry.reward !== undefined) {
+                    if (rewardChart.data.labels.length > 30) {
+                        rewardChart.data.labels.shift();
+                        rewardChart.data.datasets[0].data.shift();
+                    }
                     rewardChart.data.labels.push(`S${rewardChart.data.labels.length + 1}`);
                     rewardChart.data.datasets[0].data.push(entry.reward);
                     rewardChart.update();

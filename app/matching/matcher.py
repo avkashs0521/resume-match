@@ -6,6 +6,7 @@ from scipy.optimize import linear_sum_assignment
 # ✅ EASY → best match only
 def match_easy(resumes, jobs):
     sim = compute_similarity(resumes, jobs)
+    sim += np.random.normal(0, 0.08, sim.shape) # Add temperature variance
 
     matches = {}
     for i, job in enumerate(jobs):
@@ -20,6 +21,7 @@ def match_medium(resumes, jobs):
     job = jobs[0]
 
     sim = compute_similarity(resumes, [job])[0]
+    sim += np.random.normal(0, 0.08, sim.shape) # Add temperature variance
 
     # 🔥 SKILL BOOST
     boosted_scores = []
@@ -43,6 +45,7 @@ def match_medium(resumes, jobs):
 # ✅ HARD → optimal assignment
 def match_hard(resumes, jobs):
     sim = compute_similarity(resumes, jobs)
+    sim += np.random.normal(0, 0.08, sim.shape) # Add temperature variance
 
     cost = -sim
     row_ind, col_ind = linear_sum_assignment(cost)
@@ -57,14 +60,18 @@ def match_hard(resumes, jobs):
 # ✅ RANDOM → baseline (for comparison)
 def match_random(resumes, jobs, task_type="easy"):
     import random
-    r_ids = [r["id"] for r in resumes]
-    j_ids = [j["id"] for j in jobs]
+    sim = compute_similarity(resumes, jobs)
     
     if task_type == "medium":
-        return random.sample(r_ids, min(3, len(r_ids)))
+        scores = sim[0]
+        top_5_idx = np.argsort(scores)[::-1][:5]
+        top_5_rids = [resumes[i]["id"] for i in top_5_idx]
+        return random.sample(top_5_rids, min(3, len(top_5_rids)))
     
-    # For easy and hard, assign one resume per job randomly
     matches = {}
-    for jid in j_ids:
-        matches[jid] = random.choice(r_ids)
+    for i, job in enumerate(jobs):
+        scores = sim[i]
+        top_5_idx = np.argsort(scores)[::-1][:5]
+        top_5_rids = [resumes[idx]["id"] for idx in top_5_idx]
+        matches[job["id"]] = random.choice(top_5_rids)
     return matches

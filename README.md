@@ -31,12 +31,18 @@ The environment provides 3 tasks:
 pip install -r requirements.txt
 ```
 
-## Running the Baseline
-You can evaluate an LLM's performance against the environment using the baseline script.
+## Running the External Agent Interface (Inference)
+You can evaluate a standard LLM agent's performance against the environment using the inference pipeline. This simulates the Phase 2 agent-runner that will interact with the environment.
 ```bash
 export OPENAI_API_KEY="sk-..."
-python baseline.py
+python inference.py
 ```
+
+## Evaluation (Phase 2) Compatibility 🤖
+This setup strictly complies with the Phase 2 OpenEnv requirements:
+- **No internal RL agent required:** The core deliverable is the Environment + Inference bridge.
+- **`inference.py` script:** Facilitates interaction between an external LLM agent (like OpenAI) and the `ResumeEnv` environment.
+- **Structured JSON-compliant logs:** Built to output `[START]`, `[STEP]`, and `[END]` syntax tracking the state, rewards, and exact agent XAI feedback, ensuring seamless ingestion by automated benchmarking scrapers.
 
 ## Deployment
 This environment is containerized for Hugging Face Spaces.
